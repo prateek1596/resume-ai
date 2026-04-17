@@ -1,0 +1,7 @@
+"""Configure pytest environment for ResumeAI tests."""
+import os
+import pytest
+
+# Provide dummy env vars before any app module is imported
+os.environ.setdefault("ANTHROPIC_API_KEY", "sk-ant-test-key")
+os.environ.setdefault("DEBUG", "true")
