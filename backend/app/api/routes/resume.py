@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+from io import BytesIO
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 from app.models.resume import GenerateRequest, GenerateResponse, ImproveRequest, ImproveResponse
 from app.services import ats, generator
@@ -44,5 +46,20 @@ async def analyze_ats(req: GenerateRequest):
     try:
         result = await ats.analyze(req.resume_data, req.job_description)
         return result
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=str(err)) from err
+
+
+@router.post("/export/docx")
+async def export_docx(req: GenerateRequest):
+    """Export the current resume data as a DOCX file."""
+    try:
+        payload = generator.build_docx_resume(req.resume_data)
+        filename = f"{req.resume_data.contact.name or 'resume'}.docx".replace('/', '_')
+        return StreamingResponse(
+            BytesIO(payload),
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
     except Exception as err:
         raise HTTPException(status_code=500, detail=str(err)) from err

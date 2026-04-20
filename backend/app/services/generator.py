@@ -1,8 +1,13 @@
 """Generate resume HTML from structured data using Claude."""
 from __future__ import annotations
 
+from io import BytesIO
 import html
 import re
+
+from docx import Document
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.shared import Pt
 
 try:
     import anthropic
@@ -38,6 +43,9 @@ TEMPLATE_DESCRIPTIONS = {
     "bento":      "Grid-based modular layout with stacked content cards, strong section rhythm, clean spacing, and photo in the top card.",
     "monograph":  "Editorial serif-led layout with centered masthead, generous margins, thin rules, and subdued magazine-style hierarchy.",
     "duo":        "Compact two-rail layout with a narrow side column for contact details and a dense main column for experience and projects.",
+    "finance":    "Elegant finance-focused resume with precise metrics, restrained typography, and high-contrast section dividers.",
+    "product":    "Outcome-led product resume with strategic summary placement, emphasis on impact metrics, and clean modular sections.",
+    "portfolio":  "Portfolio-forward resume with stronger project showcase, visual hierarchy for links, and modern creative balance.",
 }
 
 
@@ -344,3 +352,97 @@ async def improve_content(content: str, context: str, job_description: str, mode
         changes = ["Improved clarity and impact", "Enhanced ATS compatibility"]
 
     return improved, changes
+
+
+def build_docx_resume(resume: ResumeData) -> bytes:
+    document = Document()
+
+    normal_style = document.styles["Normal"]
+    normal_style.font.name = "Calibri"
+    normal_style.font.size = Pt(10.5)
+
+    title = document.add_paragraph()
+    title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+    title_run = title.add_run(resume.contact.name or "Your Name")
+    title_run.bold = True
+    title_run.font.size = Pt(18)
+
+    if resume.contact.title:
+        subtitle = document.add_paragraph()
+        subtitle.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        subtitle.add_run(resume.contact.title).italic = True
+
+    contact_bits = [
+        resume.contact.email,
+        resume.contact.phone,
+        resume.contact.location,
+        resume.contact.linkedin,
+        resume.contact.portfolio,
+        resume.contact.website,
+    ]
+    contact_line = " | ".join(bit for bit in contact_bits if bit)
+    if contact_line:
+        contact = document.add_paragraph()
+        contact.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        contact.add_run(contact_line)
+
+    if resume.summary:
+        document.add_heading("Summary", level=1)
+        document.add_paragraph(resume.summary)
+
+    if resume.experiences:
+        document.add_heading("Experience", level=1)
+        for item in resume.experiences:
+            heading = document.add_paragraph()
+            heading.add_run(f"{item.role} | {item.company}").bold = True
+            meta = document.add_paragraph()
+            meta.add_run(f"{item.start} - {item.end}").italic = True
+            for bullet in item.bullets:
+                document.add_paragraph(bullet, style="List Bullet")
+
+    if resume.projects:
+        document.add_heading("Projects", level=1)
+        for item in resume.projects:
+            heading = document.add_paragraph()
+            heading.add_run(item.name).bold = True
+            if item.technologies:
+                document.add_paragraph(item.technologies)
+            if item.description:
+                document.add_paragraph(item.description)
+            for bullet in item.bullets:
+                document.add_paragraph(bullet, style="List Bullet")
+
+    if resume.educations:
+        document.add_heading("Education", level=1)
+        for item in resume.educations:
+            line = f"{item.school} | {item.degree} {item.field}".strip()
+            document.add_paragraph(line)
+            if item.year:
+                document.add_paragraph(item.year)
+
+    if resume.skills.technical or resume.skills.soft:
+        document.add_heading("Skills", level=1)
+        if resume.skills.technical:
+            document.add_paragraph("Technical: " + ", ".join(resume.skills.technical))
+        if resume.skills.soft:
+            document.add_paragraph("Soft: " + ", ".join(resume.skills.soft))
+
+    if resume.certifications:
+        document.add_heading("Certifications", level=1)
+        for item in resume.certifications:
+            line = item.name
+            if item.issuer:
+                line = f"{line} | {item.issuer}"
+            if item.year:
+                line = f"{line} | {item.year}"
+            document.add_paragraph(line)
+
+    if resume.languages:
+        document.add_heading("Languages", level=1)
+        for item in resume.languages:
+            level = f": {item.level}" if item.level else ""
+            document.add_paragraph(f"{item.language}{level}")
+
+    buffer = BytesIO()
+    document.save(buffer)
+    return buffer.getvalue()

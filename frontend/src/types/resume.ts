@@ -104,6 +104,9 @@ export const TEMPLATES: Template[] = [
   { id: 'bento',      name: 'Bento',        description: 'Card grid · Photo · Modern',      hasPhoto: true,  category: 'modern'   },
   { id: 'monograph',  name: 'Monograph',    description: 'Editorial · No photo · Serif',    hasPhoto: false, category: 'classic'  },
   { id: 'duo',        name: 'Duo',          description: 'Split rail · Photo · Compact',    hasPhoto: true,  category: 'modern'   },
+  { id: 'finance',    name: 'Finance',      description: 'Sharp metrics · No photo · Premium', hasPhoto: false, category: 'classic'  },
+  { id: 'product',    name: 'Product',      description: 'Outcome-led · Photo · Strategy',  hasPhoto: true,  category: 'modern'   },
+  { id: 'portfolio',  name: 'Portfolio',    description: 'Creative · Photo · Project-first', hasPhoto: true,  category: 'creative' },
 ]
 
 export const COLOR_SCHEMES = [
