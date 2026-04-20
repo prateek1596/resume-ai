@@ -83,6 +83,16 @@ class ATSAnalysis(BaseModel):
     missing_keywords: list[str] = Field(default_factory=list)
 
 
+class NLPAnalysis(BaseModel):
+    score: int
+    job_keywords: list[str] = Field(default_factory=list)
+    resume_keywords: list[str] = Field(default_factory=list)
+    matched_keywords: list[str] = Field(default_factory=list)
+    missing_keywords: list[str] = Field(default_factory=list)
+    highlight_terms: list[str] = Field(default_factory=list)
+    suggested_focus: list[str] = Field(default_factory=list)
+
+
 class GenerateRequest(BaseModel):
     resume_data: ResumeData
     template_id: str = "executive"

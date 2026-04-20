@@ -11,6 +11,7 @@ export function useGenerate() {
     jobDescription,
     setGeneratedHtml,
     setAts,
+    setKeywordAnalysis,
     setGenerating,
     isGenerating,
   } = useResumeStore()
@@ -46,6 +47,17 @@ export function useGenerate() {
       })
       setGeneratedHtml(res.html)
       setAts(res.ats)
+      try {
+        const keywordAnalysis = await resumeApi.analyzeKeywords({
+          resume_data: resume,
+          template_id: templateId,
+          color_scheme: colorScheme,
+          job_description: jobDescription,
+        })
+        setKeywordAnalysis(keywordAnalysis)
+      } catch {
+        setKeywordAnalysis(null)
+      }
       toast.success('Resume generated!', { id: tid })
       return true
     } catch (err: unknown) {

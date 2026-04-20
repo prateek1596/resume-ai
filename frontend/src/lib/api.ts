@@ -1,10 +1,30 @@
 import axios from 'axios'
-import type { ResumeData, ATSAnalysis } from '../types/resume'
+import type { ATSAnalysis, NLPAnalysis, ResumeData } from '../types/resume'
+import { useAuthStore } from '../stores/authStore'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1',
   timeout: 60_000,
 })
+
+api.interceptors.request.use(config => {
+  const token = useAuthStore.getState().token
+  if (token) {
+    config.headers = config.headers ?? {}
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error?.response?.status === 401) {
+      useAuthStore.getState().clearSession()
+    }
+    return Promise.reject(error)
+  }
+)
 
 export interface GenerateResponse {
   html: string
@@ -25,7 +45,45 @@ export interface ExportDocxResponse {
   data: Blob
 }
 
+export interface AuthResponse {
+  ok: boolean
+  access_token: string
+  token_type: string
+  email: string
+}
+
+export interface CurrentUserResponse {
+  ok: boolean
+  email: string
+}
+
+export interface KeywordAnalysisResponse extends NLPAnalysis {}
+
+export interface LoginParams {
+  email: string
+  password: string
+}
+
 export const resumeApi = {
+  register: async (params: LoginParams): Promise<AuthResponse> => {
+    const { data } = await api.post<AuthResponse>('/auth/register', params)
+    return data
+  },
+
+  login: async (params: LoginParams): Promise<AuthResponse> => {
+    const { data } = await api.post<AuthResponse>('/auth/login', params)
+    return data
+  },
+
+  me: async (): Promise<CurrentUserResponse> => {
+    const { data } = await api.get<CurrentUserResponse>('/auth/me')
+    return data
+  },
+
+  logout: async (): Promise<void> => {
+    await api.post('/auth/logout')
+  },
+
   generate: async (params: {
     resume_data: ResumeData
     template_id: string
@@ -69,6 +127,16 @@ export const resumeApi = {
     const { data } = await api.post('/resume/export/docx', params, {
       responseType: 'blob',
     })
+    return data
+  },
+
+  analyzeKeywords: async (params: {
+    resume_data: ResumeData
+    template_id: string
+    color_scheme: string
+    job_description: string
+  }): Promise<KeywordAnalysisResponse> => {
+    const { data } = await api.post<KeywordAnalysisResponse>('/resume/keywords', params)
     return data
   },
 }

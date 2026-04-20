@@ -102,10 +102,11 @@ export function EditorPanel() {
 
 // ── Basics ─────────────────────────────────────────────────────────────
 function BasicsTab() {
-  const { resume, setContact, setSummary, setPhoto, ats } = useResumeStore()
+  const { resume, setContact, setSummary, setPhoto, ats, keywordAnalysis, setKeywordAnalysis } = useResumeStore()
   const { contact, summary } = resume
   const photoRef = useRef<HTMLInputElement>(null)
   const [improving, setImproving] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
   const { jobDescription } = useResumeStore()
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,6 +126,30 @@ function BasicsTab() {
       toast.success('Summary improved!')
     } catch { toast.error('Could not improve — is the backend running?') }
     finally { setImproving(false) }
+  }
+
+  const analyzeKeywords = async () => {
+    if (!jobDescription.trim()) {
+      toast.error('Add a job description first')
+      return
+    }
+
+    setAnalyzing(true)
+    const tid = toast.loading('Analyzing keywords…')
+    try {
+      const res = await resumeApi.analyzeKeywords({
+        resume_data: resume,
+        template_id: 'executive',
+        color_scheme: 'classic',
+        job_description: jobDescription,
+      })
+      setKeywordAnalysis(res)
+      toast.success('Keywords analyzed', { id: tid })
+    } catch {
+      toast.error('Could not analyze keywords — is the backend running?', { id: tid })
+    } finally {
+      setAnalyzing(false)
+    }
   }
 
   return (
@@ -187,6 +212,14 @@ function BasicsTab() {
         >
           {improving ? <Spinner size={12} /> : '✦'} AI Improve
         </button>
+        <button
+          className="btn btn-ghost btn-sm ep-mt-8"
+          onClick={analyzeKeywords}
+          disabled={analyzing}
+          style={{ marginLeft: 8 }}
+        >
+          {analyzing ? <Spinner size={12} /> : '◎'} Analyze Keywords
+        </button>
         {ats && (ats.matched_keywords.length > 0 || ats.missing_keywords.length > 0) && (
           <div style={{ marginTop: 14, display: 'grid', gap: 10 }}>
             {ats.matched_keywords.length > 0 && (
@@ -211,9 +244,72 @@ function BasicsTab() {
             )}
           </div>
         )}
+        {keywordAnalysis && (
+          <div style={{ marginTop: 14, padding: 12, borderRadius: 10, border: '1px solid #2a2a3a', background: '#111118', display: 'grid', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#e4e4e7' }}>Keyword Lens</div>
+                <div style={{ fontSize: 11, color: '#71717a' }}>Inline NLP matching for the active job target.</div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#6c63ff' }}>{keywordAnalysis.score}%</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#4ade80', marginBottom: 6 }}>Highlighted summary</div>
+              <div
+                style={{ fontSize: 12, lineHeight: 1.7, color: '#d4d4d8', padding: '10px 12px', borderRadius: 8, background: '#0a0a0f', border: '1px solid #2a2a3a' }}
+                dangerouslySetInnerHTML={{ __html: highlightKeywords(summary || 'No summary yet', keywordAnalysis.highlight_terms) }}
+              />
+            </div>
+            {resume.experiences[0]?.bullets[0] && (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#4ade80', marginBottom: 6 }}>Highlighted bullets</div>
+                <div
+                  style={{ fontSize: 12, lineHeight: 1.7, color: '#d4d4d8', padding: '10px 12px', borderRadius: 8, background: '#0a0a0f', border: '1px solid #2a2a3a' }}
+                  dangerouslySetInnerHTML={{ __html: highlightKeywords(resume.experiences[0].bullets.join(' • '), keywordAnalysis.highlight_terms) }}
+                />
+              </div>
+            )}
+            {keywordAnalysis.suggested_focus.length > 0 && (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#fbbf24', marginBottom: 6 }}>Suggested focus</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {keywordAnalysis.suggested_focus.map(keyword => (
+                    <span key={keyword} style={{ padding: '4px 8px', borderRadius: 9999, fontSize: 11, color: '#fbbf24', background: 'rgba(245,158,11,0.1)' }}>{keyword}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function highlightKeywords(text: string, keywords: string[]): string {
+  if (!text) return ''
+  const unique = [...new Set(keywords.map(keyword => keyword.trim()).filter(Boolean))].sort((a, b) => b.length - a.length)
+  let output = escapeHtml(text)
+
+  for (const keyword of unique) {
+    const pattern = new RegExp(`(${escapeRegExp(keyword)})`, 'gi')
+    output = output.replace(pattern, '<mark style="background: rgba(108, 99, 255, 0.2); color: #f4f4f8; padding: 0 2px; border-radius: 4px;">$1</mark>')
+  }
+
+  return output
 }
 
 // ── Experience ─────────────────────────────────────────────────────────

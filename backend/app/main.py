@@ -23,7 +23,7 @@ app.add_middleware(
 
 app.include_router(resume.router, prefix="/api/v1")
 app.include_router(extract.router, prefix="/api/v1")
-app.include_router(auth.router, prefix="/api")
+app.include_router(auth.router, prefix="/api/v1")
 
 
 @app.get("/health")

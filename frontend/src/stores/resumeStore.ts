@@ -6,6 +6,7 @@ import type {
   EducationItem,
   ExperienceItem,
   LanguageItem,
+  NLPAnalysis,
   ProjectItem,
   ResumeData,
 } from '../types/resume'
@@ -24,6 +25,7 @@ interface ResumeStore {
   // Generated output
   generatedHtml: string
   ats: ATSAnalysis | null
+  keywordAnalysis: NLPAnalysis | null
   isGenerating: boolean
   isExtracting: boolean
 
@@ -73,6 +75,7 @@ interface ResumeStore {
   // Async results
   setGeneratedHtml: (html: string) => void
   setAts: (ats: ATSAnalysis) => void
+  setKeywordAnalysis: (analysis: NLPAnalysis | null) => void
   setGenerating: (v: boolean) => void
   setExtracting: (v: boolean) => void
 
@@ -304,6 +307,7 @@ export const useResumeStore = create<ResumeStore>()(
       starterProfiles: STARTER_PROFILES,
       generatedHtml: '',
       ats: null,
+      keywordAnalysis: null,
       isGenerating: false,
       isExtracting: false,
 
@@ -519,6 +523,7 @@ export const useResumeStore = create<ResumeStore>()(
 
       setGeneratedHtml: html => set({ generatedHtml: html }),
       setAts: ats => set({ ats }),
+      setKeywordAnalysis: analysis => set({ keywordAnalysis: analysis }),
       setGenerating: v => set({ isGenerating: v }),
       setExtracting: v => set({ isExtracting: v }),
 
@@ -557,6 +562,7 @@ export const useResumeStore = create<ResumeStore>()(
             resume,
             templateId: id === 'designer' ? 'portfolio' : id === 'product' ? 'product' : id === 'analyst' ? 'monograph' : 'executive',
             colorScheme: id === 'designer' ? 'crimson' : id === 'product' ? 'emerald' : id === 'analyst' ? 'slate' : 'classic',
+            keywordAnalysis: null,
             generatedHtml: '',
             ats: null,
             isGenerating: false,
@@ -580,6 +586,7 @@ export const useResumeStore = create<ResumeStore>()(
             jobDescription: target.description,
             jobTargets: [target],
             activeJobTargetId: target.id,
+            keywordAnalysis: null,
             generatedHtml: '',
             ats: null,
             isGenerating: false,
@@ -597,6 +604,7 @@ export const useResumeStore = create<ResumeStore>()(
           activeJobTargetId: null,
           generatedHtml: '',
           ats: null,
+          keywordAnalysis: null,
           isGenerating: false,
           isExtracting: false,
         }),

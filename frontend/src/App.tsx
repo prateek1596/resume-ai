@@ -7,6 +7,8 @@ import { TemplatesPanel } from './components/templates/TemplatesPanel'
 import { ATSPanel } from './components/resume/ATSPanel'
 import { ResumePreview } from './components/resume/ResumePreview'
 import { Badge } from './components/ui'
+import { AuthPanel } from './components/auth/AuthPanel'
+import { useAuthStore } from './stores/authStore'
 
 type Section = 'upload' | 'edit' | 'templates' | 'ats'
 
@@ -34,6 +36,7 @@ export default function App() {
   const [section, setSection] = useState<Section>('upload')
   const { resume, ats, loadDemoResume } = useResumeStore()
   const { generate, downloadPDF, downloadDocx, isGenerating } = useGenerate()
+  const { isAuthenticated } = useAuthStore()
 
   const handleGenerate = async () => {
     const ok = await generate()
@@ -57,6 +60,8 @@ export default function App() {
             ATS-Optimized Builder
           </div>
         </div>
+
+        <AuthPanel />
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '10px 0', overflowY: 'auto' }}>
@@ -93,17 +98,17 @@ export default function App() {
             className="btn btn-primary"
             style={{ width: '100%', justifyContent: 'center' }}
             onClick={handleGenerate}
-            disabled={isGenerating}
+            disabled={isGenerating || !isAuthenticated}
           >
             {isGenerating ? (
               <><span style={{ display: 'inline-block', animation: 'spin 0.8s linear infinite' }}>⟳</span> Generating…</>
-            ) : '✦ Generate Resume'}
+            ) : !isAuthenticated ? 'Sign in to Generate' : '✦ Generate Resume'}
           </button>
           <button
             className="btn btn-ghost"
             style={{ width: '100%', justifyContent: 'center' }}
             onClick={downloadPDF}
-            disabled={!useResumeStore.getState().generatedHtml}
+            disabled={!useResumeStore.getState().generatedHtml || !isAuthenticated}
           >
             ↓ Download PDF
           </button>
@@ -121,6 +126,7 @@ export default function App() {
             className="btn btn-ghost"
             style={{ width: '100%', justifyContent: 'center' }}
             onClick={downloadDocx}
+            disabled={!isAuthenticated}
           >
             ⬇ DOCX
           </button>

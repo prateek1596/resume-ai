@@ -82,6 +82,16 @@ export interface ATSAnalysis {
   missing_keywords: string[]
 }
 
+export interface NLPAnalysis {
+  score: number
+  job_keywords: string[]
+  resume_keywords: string[]
+  matched_keywords: string[]
+  missing_keywords: string[]
+  highlight_terms: string[]
+  suggested_focus: string[]
+}
+
 export interface Template {
   id: string
   name: string

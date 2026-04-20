@@ -8,6 +8,18 @@ from app.main import app
 client = TestClient(app)
 
 
+def auth_headers():
+    credentials = {"email": "jane@test.com", "password": "secret123"}
+    register = client.post("/api/v1/auth/register", json=credentials)
+    if register.status_code not in (200, 409):
+        raise AssertionError(register.text)
+
+    login = client.post("/api/v1/auth/login", json=credentials)
+    assert login.status_code == 200
+    token = login.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 def test_health():
     res = client.get("/health")
     assert res.status_code == 200
@@ -16,7 +28,7 @@ def test_health():
 
 def test_generate_missing_name():
     """Should return 422 if resume_data is structurally invalid."""
-    res = client.post("/api/v1/resume/generate", json={})
+    res = client.post("/api/v1/resume/generate", json={}, headers=auth_headers())
     assert res.status_code == 422
 
 
@@ -59,7 +71,7 @@ def test_generate_resume(mock_ats_client, mock_gen_client):
         content=[MagicMock(text='{"score":78,"breakdown":{"keywords":80},"suggestions":[{"type":"add","category":"keywords","text":"Add more keywords","priority":"high"}],"matched_keywords":["Python"],"missing_keywords":["Docker"]}')]
     )
 
-    res = client.post("/api/v1/resume/generate", json=SAMPLE_RESUME)
+    res = client.post("/api/v1/resume/generate", json=SAMPLE_RESUME, headers=auth_headers())
     assert res.status_code == 200
     data = res.json()
     assert "html" in data
@@ -84,7 +96,7 @@ def test_improve_endpoint(mock_client):
         "context": "Senior Engineer",
         "job_description": "",
         "mode": "bullets"
-    })
+    }, headers=auth_headers())
     assert res.status_code == 200
     data = res.json()
     assert "improved" in data
@@ -98,3 +110,16 @@ def test_extract_unsupported_type():
         files={"file": ("test.xyz", b"content", "application/octet-stream")}
     )
     assert res.status_code == 415
+
+
+def test_keyword_analysis_endpoint():
+    headers = auth_headers()
+    res = client.post(
+        "/api/v1/resume/keywords",
+        json={**SAMPLE_RESUME, "job_description": "Python React Docker FastAPI"},
+        headers=headers,
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert "highlight_terms" in data
+    assert "Python" in data["matched_keywords"] or "python" in [kw.lower() for kw in data["matched_keywords"]]
