@@ -92,5 +92,29 @@ ${generatedHtml}
     win.document.close()
   }
 
-  return { generate, downloadPDF, isGenerating }
+  const downloadDocx = async () => {
+    const { resume: r } = useResumeStore.getState()
+    if (!r.contact.name.trim()) {
+      toast.error('Add a name before exporting DOCX')
+      return
+    }
+
+    const tid = toast.loading('Preparing DOCX export…')
+    try {
+      const blob = await resumeApi.exportDocx({ resume_data: r })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${r.contact.name || 'resume'}.docx`.replaceAll('/', '_')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      toast.success('DOCX export ready!', { id: tid })
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err), { id: tid })
+    }
+  }
+
+  return { generate, downloadPDF, downloadDocx, isGenerating }
 }

@@ -33,7 +33,7 @@ function atsVariant(score: number): 'green' | 'yellow' | 'red' {
 export default function App() {
   const [section, setSection] = useState<Section>('upload')
   const { resume, ats, loadDemoResume } = useResumeStore()
-  const { generate, downloadPDF, isGenerating } = useGenerate()
+  const { generate, downloadPDF, downloadDocx, isGenerating } = useGenerate()
 
   const handleGenerate = async () => {
     const ok = await generate()
@@ -46,7 +46,6 @@ export default function App() {
       {/* ── Sidebar ─────────────────────────────────────────────── */}
       <aside style={{
         width: 224, minWidth: 224,
-        background: '#111118', borderRight: '1px solid #2a2a3a',
         display: 'flex', flexDirection: 'column',
       }}>
         {/* Logo */}
@@ -117,6 +116,13 @@ export default function App() {
             }}
           >
             ✦ Load Demo Resume
+          </button>
+          <button
+            className="btn btn-ghost"
+            style={{ width: '100%', justifyContent: 'center' }}
+            onClick={downloadDocx}
+          >
+            ⬇ DOCX
           </button>
         </div>
       </aside>

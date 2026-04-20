@@ -7,7 +7,8 @@ import './EditorPanel.css'
 
 export function EditorPanel() {
   const [tab, setTab] = useState('basics')
-  const { reset } = useResumeStore()
+  const { reset, resume, jobDescription, setSummary, updateExperience, updateProject } = useResumeStore()
+  const [polishing, setPolishing] = useState(false)
 
   const handleReset = () => {
     if (window.confirm('Reset the entire resume workspace? This clears all content, the generated preview, and ATS analysis.')) {
@@ -16,11 +17,70 @@ export function EditorPanel() {
     }
   }
 
+  const polishAll = async () => {
+    const hasContent = Boolean(
+      resume.summary.trim() ||
+      resume.experiences.some(item => item.bullets.length > 0) ||
+      resume.projects.some(item => item.description.trim())
+    )
+    if (!hasContent) {
+      toast.error('Add some resume content first')
+      return
+    }
+
+    setPolishing(true)
+    const tid = toast.loading('Polishing resume content…')
+
+    try {
+      if (resume.summary.trim()) {
+        const summaryResult = await resumeApi.improve({
+          content: resume.summary,
+          mode: 'summary',
+          job_description: jobDescription,
+        })
+        setSummary(summaryResult.improved)
+      }
+
+      for (const experience of resume.experiences) {
+        if (!experience.bullets.length) continue
+        const bulletsResult = await resumeApi.improve({
+          content: experience.bullets.join('\n'),
+          context: `${experience.role} at ${experience.company}`,
+          job_description: jobDescription,
+          mode: 'bullets',
+        })
+        updateExperience(experience.id, 'bullets', bulletsResult.improved.split('\n').map(line => line.trim()).filter(Boolean))
+      }
+
+      for (const project of resume.projects) {
+        if (!project.description.trim()) continue
+        const projectResult = await resumeApi.improve({
+          content: project.description,
+          context: project.name,
+          job_description: jobDescription,
+          mode: 'general',
+        })
+        updateProject(project.id, 'description', projectResult.improved)
+      }
+
+      toast.success('Resume polished!', { id: tid })
+    } catch {
+      toast.error('Could not polish — is the backend running?', { id: tid })
+    } finally {
+      setPolishing(false)
+    }
+  }
+
   return (
     <div className="fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8 }}>
         <div style={{ fontSize: 12, color: '#71717a' }}>Build, refine, and reuse sections without starting over.</div>
-        <button className="btn btn-ghost btn-sm" onClick={handleReset}>Reset Resume</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost btn-sm" onClick={polishAll} disabled={polishing}>
+            {polishing ? <Spinner size={12} /> : '✦'} Polish All
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={handleReset}>Reset Resume</button>
+        </div>
       </div>
       <Tabs
         tabs={[
@@ -42,7 +102,7 @@ export function EditorPanel() {
 
 // ── Basics ─────────────────────────────────────────────────────────────
 function BasicsTab() {
-  const { resume, setContact, setSummary, setPhoto } = useResumeStore()
+  const { resume, setContact, setSummary, setPhoto, ats } = useResumeStore()
   const { contact, summary } = resume
   const photoRef = useRef<HTMLInputElement>(null)
   const [improving, setImproving] = useState(false)
@@ -127,6 +187,30 @@ function BasicsTab() {
         >
           {improving ? <Spinner size={12} /> : '✦'} AI Improve
         </button>
+        {ats && (ats.matched_keywords.length > 0 || ats.missing_keywords.length > 0) && (
+          <div style={{ marginTop: 14, display: 'grid', gap: 10 }}>
+            {ats.matched_keywords.length > 0 && (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#4ade80', marginBottom: 6 }}>Matched keywords</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {ats.matched_keywords.map(keyword => (
+                    <span key={keyword} style={{ padding: '4px 8px', borderRadius: 9999, fontSize: 11, color: '#4ade80', background: 'rgba(34,197,94,0.1)' }}>{keyword}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {ats.missing_keywords.length > 0 && (
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#f87171', marginBottom: 6 }}>Missing keywords</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {ats.missing_keywords.map(keyword => (
+                    <span key={keyword} style={{ padding: '4px 8px', borderRadius: 9999, fontSize: 11, color: '#f87171', background: 'rgba(239,68,68,0.1)' }}>{keyword}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

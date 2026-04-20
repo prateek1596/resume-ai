@@ -21,6 +21,10 @@ export interface ImproveResponse {
   changes_made: string[]
 }
 
+export interface ExportDocxResponse {
+  data: Blob
+}
+
 export const resumeApi = {
   generate: async (params: {
     resume_data: ResumeData
@@ -57,6 +61,13 @@ export const resumeApi = {
     form.append('file', file)
     const { data } = await api.post<ExtractResponse>('/extract/upload', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return data
+  },
+
+  exportDocx: async (params: { resume_data: ResumeData }): Promise<Blob> => {
+    const { data } = await api.post('/resume/export/docx', params, {
+      responseType: 'blob',
     })
     return data
   },
