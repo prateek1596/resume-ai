@@ -19,6 +19,7 @@ interface ResumeStore {
   jobDescription: string
   jobTargets: JobTarget[]
   activeJobTargetId: string | null
+  starterProfiles: StarterProfile[]
 
   // Generated output
   generatedHtml: string
@@ -67,6 +68,7 @@ interface ResumeStore {
   saveJobTarget: (name: string) => void
   selectJobTarget: (id: string) => void
   deleteJobTarget: (id: string) => void
+  loadStarterProfile: (id: string) => void
 
   // Async results
   setGeneratedHtml: (html: string) => void
@@ -86,6 +88,18 @@ interface JobTarget {
   id: string
   name: string
   description: string
+}
+
+interface StarterProfile {
+  id: string
+  name: string
+  title: string
+  summary: string
+  skills: ResumeData['skills']
+  experiences: Array<Pick<ExperienceItem, 'company' | 'role' | 'start' | 'end' | 'bullets'>>
+  projects: Array<Pick<ProjectItem, 'name' | 'description' | 'technologies' | 'bullets' | 'url'>>
+  educations: Array<Pick<EducationItem, 'school' | 'degree' | 'field' | 'year' | 'gpa'>>
+  certifications: Array<Pick<CertificationItem, 'name' | 'issuer' | 'year' | 'url'>>
 }
 
 const DEFAULT_TEMPLATE_ID = 'executive'
@@ -184,6 +198,100 @@ function buildDemoResume(): ResumeData {
   }
 }
 
+function buildStarterProfile(profile: StarterProfile): ResumeData {
+  return {
+    contact: {
+      name: '',
+      title: profile.title,
+      email: '',
+      phone: '',
+      location: '',
+      linkedin: '',
+      portfolio: '',
+      website: '',
+    },
+    summary: profile.summary,
+    experiences: profile.experiences.map(item => ({ id: makeId(), ...item })),
+    educations: profile.educations.map(item => ({ id: makeId(), ...item })),
+    skills: profile.skills,
+    certifications: profile.certifications.map(item => ({ id: makeId(), ...item })),
+    languages: [],
+    projects: profile.projects.map(item => ({ id: makeId(), ...item, url: item.url ?? '' })),
+    photo_base64: null,
+  }
+}
+
+const STARTER_PROFILES: StarterProfile[] = [
+  {
+    id: 'software-engineer',
+    name: 'Software Engineer',
+    title: 'Software Engineer',
+    summary: 'Full-stack engineer building product experiences, APIs, and cloud infrastructure with measurable impact.',
+    skills: { technical: ['TypeScript', 'React', 'Python', 'FastAPI', 'PostgreSQL', 'AWS'], soft: ['Ownership', 'Communication'] },
+    experiences: [
+      { company: 'Acme', role: 'Software Engineer', start: '2022', end: 'Present', bullets: ['Built customer-facing features that increased engagement by 17%', 'Reduced API latency by 38% through caching and query tuning'] },
+    ],
+    projects: [
+      { name: 'Developer Portal', description: 'Self-serve portal for internal and external users.', technologies: 'React, FastAPI, PostgreSQL', url: '', bullets: ['Launched a self-serve workflow that cut support requests by 25%'] },
+    ],
+    educations: [
+      { school: 'State University', degree: 'B.S.', field: 'Computer Science', year: '2021', gpa: '3.7' },
+    ],
+    certifications: [],
+  },
+  {
+    id: 'product-manager',
+    name: 'Product Manager',
+    title: 'Product Manager',
+    summary: 'Product manager focused on discovery, analytics, and shipping cross-functional roadmaps with measurable outcomes.',
+    skills: { technical: ['A/B Testing', 'Analytics', 'SQL', 'Figma'], soft: ['Stakeholder Management', 'Prioritization'] },
+    experiences: [
+      { company: 'Orbit', role: 'Product Manager', start: '2021', end: 'Present', bullets: ['Led roadmap planning across design, engineering, and GTM', 'Increased activation by 14% after a redesigned onboarding funnel'] },
+    ],
+    projects: [
+      { name: 'Experiment Dashboard', description: 'Decision-making tool for product experiments and KPI tracking.', technologies: 'SQL, Looker, Figma', url: '', bullets: ['Enabled weekly experiment review cadence for 3 product teams'] },
+    ],
+    educations: [
+      { school: 'University of Michigan', degree: 'B.A.', field: 'Economics', year: '2019', gpa: '3.6' },
+    ],
+    certifications: [],
+  },
+  {
+    id: 'designer',
+    name: 'Designer',
+    title: 'Product Designer',
+    summary: 'Product designer blending systems thinking, research, and polished interaction design across web products.',
+    skills: { technical: ['Figma', 'Design Systems', 'Prototyping', 'User Research'], soft: ['Collaboration', 'Storytelling'] },
+    experiences: [
+      { company: 'Studio Nine', role: 'Product Designer', start: '2020', end: 'Present', bullets: ['Created a design system adopted across 12 product surfaces', 'Improved task completion rate by 19% with iterative usability testing'] },
+    ],
+    projects: [
+      { name: 'Brand Refresh', description: 'Modernized the visual identity and UI foundations for a B2B platform.', technologies: 'Figma, Web, Accessibility', url: '', bullets: ['Reduced design-to-dev cycle time by establishing reusable components'] },
+    ],
+    educations: [
+      { school: 'Art Institute', degree: 'BFA', field: 'Interaction Design', year: '2020', gpa: '' },
+    ],
+    certifications: [],
+  },
+  {
+    id: 'analyst',
+    name: 'Data Analyst',
+    title: 'Data Analyst',
+    summary: 'Analyst translating data into decisions through dashboards, experimentation, and actionable insights.',
+    skills: { technical: ['SQL', 'Tableau', 'Python', 'Excel', 'dbt'], soft: ['Critical Thinking', 'Communication'] },
+    experiences: [
+      { company: 'Northwind', role: 'Data Analyst', start: '2021', end: 'Present', bullets: ['Built executive dashboards used in weekly planning reviews', 'Identified retention drop-offs that informed a 9% uplift in renewal rates'] },
+    ],
+    projects: [
+      { name: 'Revenue Forecasting', description: 'Operational forecasting model for leadership planning.', technologies: 'Python, SQL, Tableau', url: '', bullets: ['Improved forecast accuracy by 11% with cleaner data pipelines'] },
+    ],
+    educations: [
+      { school: 'Northwestern University', degree: 'B.S.', field: 'Statistics', year: '2020', gpa: '3.8' },
+    ],
+    certifications: [],
+  },
+]
+
 export const useResumeStore = create<ResumeStore>()(
   persist(
     (set, get) => ({
@@ -193,6 +301,7 @@ export const useResumeStore = create<ResumeStore>()(
       jobDescription: '',
       jobTargets: [],
       activeJobTargetId: null,
+      starterProfiles: STARTER_PROFILES,
       generatedHtml: '',
       ats: null,
       isGenerating: false,
@@ -436,6 +545,22 @@ export const useResumeStore = create<ResumeStore>()(
               projects,
               skills: data.skills ?? s.resume.skills,
             },
+          }
+        }),
+      loadStarterProfile: id =>
+        set(s => {
+          const profile = s.starterProfiles.find(item => item.id === id)
+          if (!profile) return s
+
+          const resume = buildStarterProfile(profile)
+          return {
+            resume,
+            templateId: id === 'designer' ? 'portfolio' : id === 'product' ? 'product' : id === 'analyst' ? 'monograph' : 'executive',
+            colorScheme: id === 'designer' ? 'crimson' : id === 'product' ? 'emerald' : id === 'analyst' ? 'slate' : 'classic',
+            generatedHtml: '',
+            ats: null,
+            isGenerating: false,
+            isExtracting: false,
           }
         }),
 

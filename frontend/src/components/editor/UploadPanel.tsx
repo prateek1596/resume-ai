@@ -24,6 +24,8 @@ export function UploadPanel({ onImported }: UploadPanelProps) {
     saveJobTarget,
     selectJobTarget,
     deleteJobTarget,
+    starterProfiles,
+    loadStarterProfile,
   } = useResumeStore()
 
   const getErrorMessage = (err: unknown): string => {
@@ -199,6 +201,23 @@ export function UploadPanel({ onImported }: UploadPanelProps) {
             <p style={{ fontSize: 13, color: '#71717a', lineHeight: 1.6 }}>
               Fill in your details manually in the <strong style={{ color: '#e4e4e7' }}>Edit</strong> tab. Start with your basics, then add experience and skills.
             </p>
+          </div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <div style={{ fontSize: 11, color: '#71717a', fontWeight: 600 }}>Starter Profiles</div>
+            {starterProfiles.map(profile => (
+              <button
+                key={profile.id}
+                className="btn btn-ghost"
+                style={{ justifyContent: 'space-between', width: '100%' }}
+                onClick={() => {
+                  loadStarterProfile(profile.id)
+                  onImported()
+                }}
+              >
+                <span>{profile.name}</span>
+                <span style={{ fontSize: 11, color: '#71717a' }}>{profile.title}</span>
+              </button>
+            ))}
           </div>
           <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={onImported}>
             Go to Editor →
