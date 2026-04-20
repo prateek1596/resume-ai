@@ -17,6 +17,8 @@ interface ResumeStore {
   templateId: string
   colorScheme: string
   jobDescription: string
+  jobTargets: JobTarget[]
+  activeJobTargetId: string | null
 
   // Generated output
   generatedHtml: string
@@ -62,6 +64,9 @@ interface ResumeStore {
   setTemplate: (id: string) => void
   setColorScheme: (id: string) => void
   setJobDescription: (v: string) => void
+  saveJobTarget: (name: string) => void
+  selectJobTarget: (id: string) => void
+  deleteJobTarget: (id: string) => void
 
   // Async results
   setGeneratedHtml: (html: string) => void
@@ -75,6 +80,12 @@ interface ResumeStore {
 
   // Reset
   reset: () => void
+}
+
+interface JobTarget {
+  id: string
+  name: string
+  description: string
 }
 
 const DEFAULT_TEMPLATE_ID = 'executive'
@@ -180,6 +191,8 @@ export const useResumeStore = create<ResumeStore>()(
       templateId: DEFAULT_TEMPLATE_ID,
       colorScheme: DEFAULT_COLOR_SCHEME,
       jobDescription: '',
+      jobTargets: [],
+      activeJobTargetId: null,
       generatedHtml: '',
       ats: null,
       isGenerating: false,
@@ -346,7 +359,54 @@ export const useResumeStore = create<ResumeStore>()(
 
       setTemplate: id => set({ templateId: id }),
       setColorScheme: id => set({ colorScheme: id }),
-      setJobDescription: v => set({ jobDescription: v }),
+      setJobDescription: v =>
+        set(s => ({
+          jobDescription: v,
+          jobTargets: s.activeJobTargetId
+            ? s.jobTargets.map(target => (
+                target.id === s.activeJobTargetId ? { ...target, description: v } : target
+              ))
+            : s.jobTargets,
+        })),
+      saveJobTarget: name =>
+        set(s => {
+          const trimmedName = name.trim()
+          const description = s.jobDescription.trim()
+          if (!trimmedName || !description) return s
+
+          const existingIndex = s.jobTargets.findIndex(target => target.id === s.activeJobTargetId)
+          if (existingIndex >= 0) {
+            const jobTargets = [...s.jobTargets]
+            jobTargets[existingIndex] = { ...jobTargets[existingIndex], name: trimmedName, description }
+            return { jobTargets }
+          }
+
+          const jobTarget: JobTarget = { id: makeId(), name: trimmedName, description }
+          return {
+            jobTargets: [...s.jobTargets, jobTarget],
+            activeJobTargetId: jobTarget.id,
+          }
+        }),
+      selectJobTarget: id =>
+        set(s => {
+          const target = s.jobTargets.find(item => item.id === id)
+          if (!target) return s
+          return {
+            activeJobTargetId: target.id,
+            jobDescription: target.description,
+          }
+        }),
+      deleteJobTarget: id =>
+        set(s => {
+          const jobTargets = s.jobTargets.filter(target => target.id !== id)
+          const nextActive = s.activeJobTargetId === id ? null : s.activeJobTargetId
+          const nextTarget = nextActive ? jobTargets.find(target => target.id === nextActive) : null
+          return {
+            jobTargets,
+            activeJobTargetId: nextActive,
+            jobDescription: nextTarget?.description ?? '',
+          }
+        }),
 
       setGeneratedHtml: html => set({ generatedHtml: html }),
       setAts: ats => set({ ats }),
@@ -380,16 +440,26 @@ export const useResumeStore = create<ResumeStore>()(
         }),
 
       loadDemoResume: () =>
-        set({
-          resume: buildDemoResume(),
-          templateId: 'bento',
-          colorScheme: 'emerald',
-          jobDescription:
-            'Senior full-stack engineer role focused on AI-assisted product development, React, TypeScript, Python, FastAPI, and cloud delivery.',
-          generatedHtml: '',
-          ats: null,
-          isGenerating: false,
-          isExtracting: false,
+        set(() => {
+          const target = {
+            id: makeId(),
+            name: 'Senior Full-Stack Engineer',
+            description:
+              'Senior full-stack engineer role focused on AI-assisted product development, React, TypeScript, Python, FastAPI, and cloud delivery.',
+          }
+
+          return {
+            resume: buildDemoResume(),
+            templateId: 'bento',
+            colorScheme: 'emerald',
+            jobDescription: target.description,
+            jobTargets: [target],
+            activeJobTargetId: target.id,
+            generatedHtml: '',
+            ats: null,
+            isGenerating: false,
+            isExtracting: false,
+          }
         }),
 
       reset: () =>
@@ -398,6 +468,8 @@ export const useResumeStore = create<ResumeStore>()(
           templateId: DEFAULT_TEMPLATE_ID,
           colorScheme: DEFAULT_COLOR_SCHEME,
           jobDescription: '',
+          jobTargets: [],
+          activeJobTargetId: null,
           generatedHtml: '',
           ats: null,
           isGenerating: false,

@@ -12,7 +12,19 @@ interface UploadPanelProps {
 
 export function UploadPanel({ onImported }: UploadPanelProps) {
   const [tab, setTab] = useState('linkedin')
-  const { setExtracting, isExtracting, importResume, setJobDescription, jobDescription } = useResumeStore()
+  const [targetName, setTargetName] = useState('')
+  const {
+    setExtracting,
+    isExtracting,
+    importResume,
+    setJobDescription,
+    jobDescription,
+    jobTargets,
+    activeJobTargetId,
+    saveJobTarget,
+    selectJobTarget,
+    deleteJobTarget,
+  } = useResumeStore()
 
   const getErrorMessage = (err: unknown): string => {
     if (err instanceof AxiosError) {
@@ -91,6 +103,68 @@ export function UploadPanel({ onImported }: UploadPanelProps) {
               value={jobDescription}
               onChange={e => setJobDescription(e.target.value)}
             />
+          </div>
+
+          <div style={{ background: '#1a1a24', border: '1px solid #2a2a3a', borderRadius: 10, padding: 12, display: 'grid', gap: 10 }}>
+            <div>
+              <label className="label">Save Job Target</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  className="input"
+                  placeholder="e.g. Senior Frontend Engineer"
+                  value={targetName}
+                  onChange={e => setTargetName(e.target.value)}
+                />
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    saveJobTarget(targetName)
+                    if (jobDescription.trim()) {
+                      setTargetName('')
+                    }
+                  }}
+                  disabled={!targetName.trim() || !jobDescription.trim()}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+
+            {jobTargets.length > 0 && (
+              <div style={{ display: 'grid', gap: 8 }}>
+                <div style={{ fontSize: 11, color: '#71717a', fontWeight: 600 }}>Saved Targets</div>
+                {jobTargets.map(target => (
+                  <div
+                    key={target.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      background: activeJobTargetId === target.id ? 'rgba(108,99,255,0.12)' : '#111118',
+                      border: `1px solid ${activeJobTargetId === target.id ? '#6c63ff' : '#2a2a3a'}`,
+                    }}
+                  >
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ flex: 1, justifyContent: 'flex-start', padding: '0 6px' }}
+                      onClick={() => selectJobTarget(target.id)}
+                    >
+                      {target.name}
+                    </button>
+                    <button
+                      className="btn btn-ghost btn-icon btn-sm"
+                      onClick={() => deleteJobTarget(target.id)}
+                      title="Delete target"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
