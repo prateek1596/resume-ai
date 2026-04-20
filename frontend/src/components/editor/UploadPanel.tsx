@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import toast from 'react-hot-toast'
 import { AxiosError } from 'axios'
 import { useResumeStore } from '../../stores/resumeStore'
 import { resumeApi } from '../../lib/api'
+import { useAuthStore } from '../../stores/authStore'
 import { Tabs, Spinner } from '../ui'
 
 interface UploadPanelProps {
@@ -13,6 +14,9 @@ interface UploadPanelProps {
 export function UploadPanel({ onImported }: UploadPanelProps) {
   const [tab, setTab] = useState('linkedin')
   const [targetName, setTargetName] = useState('')
+  const [profileName, setProfileName] = useState('')
+  const [savedProfiles, setSavedProfiles] = useState<Array<{ id: string; name: string; updated_at: string }>>([])
+  const [loadingProfiles, setLoadingProfiles] = useState(false)
   const {
     setExtracting,
     isExtracting,
@@ -26,7 +30,34 @@ export function UploadPanel({ onImported }: UploadPanelProps) {
     deleteJobTarget,
     starterProfiles,
     loadStarterProfile,
+    loadWorkspace,
+    resume,
+    templateId,
+    colorScheme,
   } = useResumeStore()
+  const { isAuthenticated } = useAuthStore()
+
+  const refreshProfiles = useCallback(async () => {
+    if (!isAuthenticated) {
+      setSavedProfiles([])
+      return
+    }
+    setLoadingProfiles(true)
+    try {
+      const profiles = await resumeApi.listProfiles()
+      setSavedProfiles(profiles)
+    } catch {
+      setSavedProfiles([])
+    } finally {
+      setLoadingProfiles(false)
+    }
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (tab === 'manual') {
+      refreshProfiles()
+    }
+  }, [tab, refreshProfiles])
 
   const getErrorMessage = (err: unknown): string => {
     if (err instanceof AxiosError) {
@@ -219,6 +250,98 @@ export function UploadPanel({ onImported }: UploadPanelProps) {
               </button>
             ))}
           </div>
+
+          <div style={{ display: 'grid', gap: 8, background: '#1a1a24', borderRadius: 10, padding: 12, border: '1px solid #2a2a3a' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 11, color: '#71717a', fontWeight: 600 }}>Saved Profiles (Cloud)</div>
+              <button className="btn btn-ghost btn-sm" onClick={refreshProfiles} disabled={!isAuthenticated || loadingProfiles}>
+                {loadingProfiles ? 'Refreshing…' : 'Refresh'}
+              </button>
+            </div>
+
+            {isAuthenticated ? (
+              <>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    className="input"
+                    placeholder="Profile name"
+                    value={profileName}
+                    onChange={e => setProfileName(e.target.value)}
+                  />
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    disabled={!profileName.trim()}
+                    onClick={async () => {
+                      const tid = toast.loading('Saving profile…')
+                      try {
+                        await resumeApi.createProfile({
+                          name: profileName.trim(),
+                          resume_data: resume,
+                          template_id: templateId,
+                          color_scheme: colorScheme,
+                          job_description: jobDescription,
+                        })
+                        setProfileName('')
+                        await refreshProfiles()
+                        toast.success('Profile saved', { id: tid })
+                      } catch (err: unknown) {
+                        toast.error(getErrorMessage(err), { id: tid })
+                      }
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
+
+                {savedProfiles.length > 0 ? (
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {savedProfiles.map(profile => (
+                      <div key={profile.id} style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1px solid #2a2a3a', borderRadius: 8, padding: '8px 10px' }}>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          style={{ flex: 1, justifyContent: 'flex-start' }}
+                          onClick={async () => {
+                            const tid = toast.loading('Loading profile…')
+                            try {
+                              const detail = await resumeApi.getProfile(profile.id)
+                              loadWorkspace(detail)
+                              onImported()
+                              toast.success('Profile loaded', { id: tid })
+                            } catch (err: unknown) {
+                              toast.error(getErrorMessage(err), { id: tid })
+                            }
+                          }}
+                        >
+                          {profile.name}
+                        </button>
+                        <button
+                          className="btn btn-ghost btn-icon btn-sm"
+                          title="Delete profile"
+                          onClick={async () => {
+                            const tid = toast.loading('Deleting profile…')
+                            try {
+                              await resumeApi.deleteProfile(profile.id)
+                              await refreshProfiles()
+                              toast.success('Profile deleted', { id: tid })
+                            } catch (err: unknown) {
+                              toast.error(getErrorMessage(err), { id: tid })
+                            }
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12, color: '#71717a' }}>No saved profiles yet.</div>
+                )}
+              </>
+            ) : (
+              <div style={{ fontSize: 12, color: '#71717a' }}>Sign in to save and load profiles from the database.</div>
+            )}
+          </div>
+
           <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={onImported}>
             Go to Editor →
           </button>

@@ -82,6 +82,12 @@ interface ResumeStore {
   // Bulk import
   importResume: (data: Partial<ResumeData>) => void
   loadDemoResume: () => void
+  loadWorkspace: (data: {
+    resume_data: ResumeData
+    template_id: string
+    color_scheme: string
+    job_description: string
+  }) => void
 
   // Reset
   reset: () => void
@@ -592,6 +598,19 @@ export const useResumeStore = create<ResumeStore>()(
             isGenerating: false,
             isExtracting: false,
           }
+        }),
+
+      loadWorkspace: data =>
+        set({
+          resume: data.resume_data,
+          templateId: data.template_id,
+          colorScheme: data.color_scheme,
+          jobDescription: data.job_description,
+          generatedHtml: '',
+          ats: null,
+          keywordAnalysis: null,
+          isGenerating: false,
+          isExtracting: false,
         }),
 
       reset: () =>

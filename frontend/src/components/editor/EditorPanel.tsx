@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useResumeStore } from '../../stores/resumeStore'
 import { resumeApi } from '../../lib/api'
 import { Input, Textarea, Grid2, Tabs, TagInput, Spinner, Divider } from '../ui'
+import { useAuthStore } from '../../stores/authStore'
 import './EditorPanel.css'
 
 export function EditorPanel() {
@@ -102,12 +103,13 @@ export function EditorPanel() {
 
 // ── Basics ─────────────────────────────────────────────────────────────
 function BasicsTab() {
-  const { resume, setContact, setSummary, setPhoto, ats, keywordAnalysis, setKeywordAnalysis } = useResumeStore()
+  const { resume, setContact, setSummary, setPhoto, ats, keywordAnalysis, setKeywordAnalysis, templateId, colorScheme } = useResumeStore()
   const { contact, summary } = resume
   const photoRef = useRef<HTMLInputElement>(null)
   const [improving, setImproving] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const { jobDescription } = useResumeStore()
+  const { isAuthenticated } = useAuthStore()
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -139,8 +141,8 @@ function BasicsTab() {
     try {
       const res = await resumeApi.analyzeKeywords({
         resume_data: resume,
-        template_id: 'executive',
-        color_scheme: 'classic',
+        template_id: templateId,
+        color_scheme: colorScheme,
         job_description: jobDescription,
       })
       setKeywordAnalysis(res)
@@ -151,6 +153,38 @@ function BasicsTab() {
       setAnalyzing(false)
     }
   }
+
+  useEffect(() => {
+    if (!isAuthenticated || !jobDescription.trim()) {
+      return
+    }
+
+    const handle = window.setTimeout(async () => {
+      try {
+        const latestResume = useResumeStore.getState().resume
+        const res = await resumeApi.analyzeKeywords({
+          resume_data: latestResume,
+          template_id: templateId,
+          color_scheme: colorScheme,
+          job_description: jobDescription,
+        })
+        setKeywordAnalysis(res)
+      } catch {
+        // Keep existing analysis if transient request fails while typing.
+      }
+    }, 700)
+
+    return () => window.clearTimeout(handle)
+  }, [
+    isAuthenticated,
+    jobDescription,
+    templateId,
+    colorScheme,
+    resume.summary,
+    resume.experiences,
+    resume.projects,
+    setKeywordAnalysis,
+  ])
 
   return (
     <div className="ep-col-12">

@@ -57,11 +57,35 @@ export interface CurrentUserResponse {
   email: string
 }
 
-export interface KeywordAnalysisResponse extends NLPAnalysis {}
+export type KeywordAnalysisResponse = NLPAnalysis
 
 export interface LoginParams {
   email: string
   password: string
+}
+
+export interface SavedProfileSummary {
+  id: string
+  name: string
+  updated_at: string
+}
+
+export interface SavedProfileRecord {
+  id: string
+  name: string
+  updated_at: string
+  resume_data: ResumeData
+  template_id: string
+  color_scheme: string
+  job_description: string
+}
+
+export interface SaveProfileParams {
+  name: string
+  resume_data: ResumeData
+  template_id: string
+  color_scheme: string
+  job_description: string
 }
 
 export const resumeApi = {
@@ -138,5 +162,29 @@ export const resumeApi = {
   }): Promise<KeywordAnalysisResponse> => {
     const { data } = await api.post<KeywordAnalysisResponse>('/resume/keywords', params)
     return data
+  },
+
+  listProfiles: async (): Promise<SavedProfileSummary[]> => {
+    const { data } = await api.get<SavedProfileSummary[]>('/profiles')
+    return data
+  },
+
+  getProfile: async (id: string): Promise<SavedProfileRecord> => {
+    const { data } = await api.get<SavedProfileRecord>(`/profiles/${id}`)
+    return data
+  },
+
+  createProfile: async (params: SaveProfileParams): Promise<SavedProfileSummary> => {
+    const { data } = await api.post<SavedProfileSummary>('/profiles', params)
+    return data
+  },
+
+  updateProfile: async (id: string, params: SaveProfileParams): Promise<SavedProfileSummary> => {
+    const { data } = await api.put<SavedProfileSummary>(`/profiles/${id}`, params)
+    return data
+  },
+
+  deleteProfile: async (id: string): Promise<void> => {
+    await api.delete(`/profiles/${id}`)
   },
 }

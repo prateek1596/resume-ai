@@ -120,3 +120,24 @@ class ImproveRequest(BaseModel):
 class ImproveResponse(BaseModel):
     improved: str
     changes_made: list[str]
+
+
+class ProfilePayload(BaseModel):
+    name: str
+    resume_data: ResumeData
+    template_id: str = "executive"
+    color_scheme: str = "classic"
+    job_description: str = ""
+
+
+class ProfileSummary(BaseModel):
+    id: str
+    name: str
+    updated_at: str
+
+
+class ProfileRecord(ProfileSummary):
+    resume_data: ResumeData
+    template_id: str
+    color_scheme: str
+    job_description: str

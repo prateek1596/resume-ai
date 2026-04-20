@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import auth, extract, resume
+from app.api.routes import auth, extract, profiles, resume
 from app.core.config import get_settings
+from app.services.db import init_db
 
 settings = get_settings()
 
@@ -12,6 +13,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,6 +27,7 @@ app.add_middleware(
 app.include_router(resume.router, prefix="/api/v1")
 app.include_router(extract.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(profiles.router, prefix="/api/v1")
 
 
 @app.get("/health")

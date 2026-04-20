@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, EmailStr, Field
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+from app.services.db import get_connection
 
-# Lightweight in-memory auth store for local/dev usage.
-_users: dict[str, str] = {}
-_sessions: dict[str, str] = {}
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 class RegisterRequest(BaseModel):
@@ -41,7 +40,12 @@ def _hash_password(password: str) -> str:
 
 def _issue_token(email: str) -> str:
     token = secrets.token_urlsafe(32)
-    _sessions[token] = email
+    now = datetime.now(timezone.utc).isoformat()
+    with get_connection() as conn:
+        conn.execute(
+            "INSERT INTO sessions(token, email, created_at) VALUES (?, ?, ?)",
+            (token, email, now),
+        )
     return token
 
 
@@ -50,7 +54,9 @@ def get_current_user(authorization: str | None = Header(default=None)) -> str:
         raise HTTPException(status_code=401, detail="Missing authentication token")
 
     token = authorization.removeprefix("Bearer ").strip()
-    email = _sessions.get(token)
+    with get_connection() as conn:
+        row = conn.execute("SELECT email FROM sessions WHERE token = ?", (token,)).fetchone()
+    email = row["email"] if row else None
     if not email:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     return email
@@ -59,20 +65,28 @@ def get_current_user(authorization: str | None = Header(default=None)) -> str:
 @router.post("/register", response_model=AuthResponse)
 async def register(req: RegisterRequest):
     email = req.email.lower()
-    if email in _users:
-        raise HTTPException(status_code=409, detail="User already exists")
+    now = datetime.now(timezone.utc).isoformat()
+    with get_connection() as conn:
+        exists = conn.execute("SELECT email FROM users WHERE email = ?", (email,)).fetchone()
+        if exists:
+            raise HTTPException(status_code=409, detail="User already exists")
+        conn.execute(
+            "INSERT INTO users(email, password_hash, created_at) VALUES (?, ?, ?)",
+            (email, _hash_password(req.password), now),
+        )
 
-    _users[email] = _hash_password(req.password)
     return AuthResponse(access_token=_issue_token(email), email=email)
 
 
 @router.post("/login", response_model=AuthResponse)
 async def login(req: LoginRequest):
     email = req.email.lower()
-    saved = _users.get(email)
-    if saved is None:
+    with get_connection() as conn:
+        row = conn.execute("SELECT password_hash FROM users WHERE email = ?", (email,)).fetchone()
+
+    if row is None:
         raise HTTPException(status_code=404, detail="User not found")
-    if saved != _hash_password(req.password):
+    if row["password_hash"] != _hash_password(req.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     return AuthResponse(access_token=_issue_token(email), email=email)
@@ -88,5 +102,6 @@ async def logout(authorization: str | None = Header(default=None)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing authentication token")
     token = authorization.removeprefix("Bearer ").strip()
-    _sessions.pop(token, None)
+    with get_connection() as conn:
+        conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
     return {"ok": True}

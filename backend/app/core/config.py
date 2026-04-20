@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     max_upload_mb: int = 10
     upload_dir: str = "uploads"
 
+    # Persistence
+    db_path: str = "data/resumeai.db"
+
     # CORS
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
