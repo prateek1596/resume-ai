@@ -1,5 +1,6 @@
 """Generate resume HTML from structured data using Claude."""
 from __future__ import annotations
+
 import html
 import re
 
@@ -34,6 +35,9 @@ TEMPLATE_DESCRIPTIONS = {
     "sharp":      "Angled polygon header, bold typography with high contrast, strong geometric accents.",
     "timeline":   "Vertical timeline dots connecting experience items, header with photo, chronological emphasis.",
     "ats_pure":   "Purely text-based, Arial only, no decorative elements, no colors, maximum ATS compatibility, all caps bold section headers.",
+    "bento":      "Grid-based modular layout with stacked content cards, strong section rhythm, clean spacing, and photo in the top card.",
+    "monograph":  "Editorial serif-led layout with centered masthead, generous margins, thin rules, and subdued magazine-style hierarchy.",
+    "duo":        "Compact two-rail layout with a narrow side column for contact details and a dense main column for experience and projects.",
 }
 
 
@@ -78,45 +82,53 @@ def _render_fallback_resume(resume: ResumeData, color_scheme: str) -> str:
     experience_html = []
     for item in resume.experiences:
         bullets = "".join(f'<li style="margin:0 0 6px 18px;line-height:1.5">{_escape(b)}</li>' for b in item.bullets)
+        end_text = f" - {_escape(item.end)}" if item.end else ""
+        bullets_html = f'<ul style="margin:8px 0 0 0;padding:0;">{bullets}</ul>' if bullets else ""
         experience_html.append(
             f'<div style="margin-bottom:14px;page-break-inside:avoid">'
             f'<div style="display:flex;justify-content:space-between;gap:12px;font-weight:700">'
             f'<div>{_escape(item.role)}</div>'
-            f'<div style="color:{cs["mid"]};font-weight:500;text-align:right">{_escape(item.start)}{f" - {_escape(item.end)}" if item.end else ""}</div>'
+            f'<div style="color:{cs["mid"]};font-weight:500;text-align:right">{_escape(item.start)}{end_text}</div>'
             f'</div>'
             f'<div style="margin-top:2px;color:{cs["text"]};font-weight:600">{_escape(item.company)}</div>'
-            f'{f"<ul style=\"margin:8px 0 0 0;padding:0;\">{bullets}</ul>" if bullets else ""}'
+            f'{bullets_html}'
             f'</div>'
         )
 
     education_html = []
     for item in resume.educations:
+        degree_html = f'<div style="color:{cs["mid"]};font-size:13px">{_escape(item.degree)}</div>' if item.degree else ""
+        year_html = f'<div style="color:{cs["mid"]};font-size:13px">{_escape(item.year)}</div>' if item.year else ""
         education_html.append(
             f'<div style="margin-bottom:10px">'
             f'<div style="font-weight:700">{_escape(item.school)}</div>'
-            f'{f"<div style=\"color:{cs["mid"]};font-size:13px\">{_escape(item.degree)}</div>" if item.degree else ""}'
-            f'{f"<div style=\"color:{cs["mid"]};font-size:13px\">{_escape(item.year)}</div>" if item.year else ""}'
+            f'{degree_html}'
+            f'{year_html}'
             f'</div>'
         )
 
     cert_html = []
     for item in resume.certifications:
+        issuer_html = f'<div style="color:{cs["mid"]};font-size:13px">{_escape(item.issuer)}</div>' if item.issuer else ""
         cert_html.append(
             f'<div style="margin-bottom:8px">'
             f'<div style="font-weight:600">{_escape(item.name)}</div>'
-            f'{f"<div style=\"color:{cs["mid"]};font-size:13px\">{_escape(item.issuer)}</div>" if item.issuer else ""}'
+            f'{issuer_html}'
             f'</div>'
         )
 
     project_html = []
     for item in resume.projects:
         bullets = "".join(f'<li style="margin:0 0 6px 18px;line-height:1.5">{_escape(b)}</li>' for b in item.bullets)
+        technologies_html = f'<div style="color:{cs["mid"]};font-size:13px">{_escape(item.technologies)}</div>' if item.technologies else ""
+        description_html = f'<div style="margin-top:4px;line-height:1.5">{_escape(item.description)}</div>' if item.description else ""
+        bullets_html = f'<ul style="margin:8px 0 0 0;padding:0;">{bullets}</ul>' if bullets else ""
         project_html.append(
             f'<div style="margin-bottom:10px">'
             f'<div style="font-weight:700">{_escape(item.name)}</div>'
-            f'{f"<div style=\"color:{cs["mid"]};font-size:13px\">{_escape(item.technologies)}</div>" if item.technologies else ""}'
-            f'{f"<div style=\"margin-top:4px;line-height:1.5\">{_escape(item.description)}</div>" if item.description else ""}'
-            f'{f"<ul style=\"margin:8px 0 0 0;padding:0;\">{bullets}</ul>" if bullets else ""}'
+            f'{technologies_html}'
+            f'{description_html}'
+            f'{bullets_html}'
             f'</div>'
         )
 
@@ -200,7 +212,7 @@ def _build_prompt(resume: ResumeData, template_id: str, color_scheme: str, job_d
 
     edu_lines = [f"  {e.degree} in {e.field}, {e.school} ({e.year})" for e in resume.educations]
     cert_lines = [f"  {c.name} — {c.issuer} ({c.year})" for c in resume.certifications]
-    lang_lines = [f"  {l.language}: {l.level}" for l in resume.languages]
+    lang_lines = [f"  {lang.language}: {lang.level}" for lang in resume.languages]
     proj_lines = []
     for p in resume.projects:
         proj_lines.append(f"\n  {p.name} | {p.technologies}")

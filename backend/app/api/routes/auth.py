@@ -3,7 +3,6 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 
-
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 # Lightweight in-memory auth store for local/dev usage.

@@ -1,7 +1,13 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from __future__ import annotations
+
+import io
+import zipfile
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
+
+from app.core.config import get_settings
 from app.models.resume import ExtractResponse
 from app.services import extractor
-from app.core.config import get_settings
 
 router = APIRouter(prefix="/extract", tags=["extract"])
 settings = get_settings()
@@ -14,7 +20,7 @@ ALLOWED_TYPES = {
 
 
 @router.post("/upload", response_model=ExtractResponse)
-async def extract_from_upload(file: UploadFile = File(...)):
+async def extract_from_upload(file: UploadFile = File(...)):  # noqa: B008
     """Extract resume data from uploaded file (PDF, DOCX, TXT)."""
     max_bytes = settings.max_upload_mb * 1024 * 1024
     content = await file.read()
@@ -34,7 +40,6 @@ async def extract_from_upload(file: UploadFile = File(...)):
             data, source = await extractor.extract_from_text(content.decode("utf-8", errors="ignore"), "text")
         elif filename.endswith(".zip"):
             # LinkedIn ZIP export — find the profile.csv or resume PDF inside
-            import zipfile, io
             zf = zipfile.ZipFile(io.BytesIO(content))
             text_parts = []
             for name in zf.namelist():
@@ -51,5 +56,5 @@ async def extract_from_upload(file: UploadFile = File(...)):
         return ExtractResponse(resume_data=data, source=source)
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(500, f"Extraction failed: {str(e)}")
+    except Exception as err:
+        raise HTTPException(500, f"Extraction failed: {str(err)}") from err

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import toast from 'react-hot-toast'
+import { AxiosError } from 'axios'
 import { useResumeStore } from '../../stores/resumeStore'
 import { resumeApi } from '../../lib/api'
 import { Tabs, Spinner } from '../ui'
@@ -13,16 +14,24 @@ export function UploadPanel({ onImported }: UploadPanelProps) {
   const [tab, setTab] = useState('linkedin')
   const { setExtracting, isExtracting, importResume, setJobDescription, jobDescription } = useResumeStore()
 
+  const getErrorMessage = (err: unknown): string => {
+    if (err instanceof AxiosError) {
+      const detail = err.response?.data as { detail?: string } | undefined
+      return detail?.detail ?? 'Extraction failed'
+    }
+    return 'Extraction failed'
+  }
+
   const processFile = useCallback(async (file: File) => {
     setExtracting(true)
     const tid = toast.loading(`Extracting from ${file.name}…`)
     try {
       const res = await resumeApi.extractFile(file)
-      importResume(res.resume_data as any)
+      importResume(res.resume_data)
       toast.success(`Profile imported from ${res.source}!`, { id: tid })
       onImported()
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Extraction failed', { id: tid })
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err), { id: tid })
     } finally {
       setExtracting(false)
     }

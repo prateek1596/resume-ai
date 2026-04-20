@@ -32,7 +32,7 @@ function atsVariant(score: number): 'green' | 'yellow' | 'red' {
 
 export default function App() {
   const [section, setSection] = useState<Section>('upload')
-  const { resume, ats } = useResumeStore()
+  const { resume, ats, loadDemoResume } = useResumeStore()
   const { generate, downloadPDF, isGenerating } = useGenerate()
 
   const handleGenerate = async () => {
@@ -107,6 +107,16 @@ export default function App() {
             disabled={!useResumeStore.getState().generatedHtml}
           >
             ↓ Download PDF
+          </button>
+          <button
+            className="btn btn-ghost"
+            style={{ width: '100%', justifyContent: 'center' }}
+            onClick={() => {
+              loadDemoResume()
+              setSection('edit')
+            }}
+          >
+            ✦ Load Demo Resume
           </button>
         </div>
       </aside>

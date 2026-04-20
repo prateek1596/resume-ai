@@ -1,7 +1,7 @@
 """Utilities for cleaning and validating generated resume HTML."""
 from __future__ import annotations
-import re
 
+import re
 
 # Tags that should never appear in a resume fragment
 _BANNED_TAGS = re.compile(

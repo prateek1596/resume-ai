@@ -1,4 +1,5 @@
 import toast from 'react-hot-toast'
+import { AxiosError } from 'axios'
 import { useResumeStore } from '../stores/resumeStore'
 import { resumeApi } from '../lib/api'
 
@@ -14,6 +15,19 @@ export function useGenerate() {
     isGenerating,
   } = useResumeStore()
 
+  const getErrorMessage = (err: unknown): string => {
+    if (err instanceof AxiosError) {
+      const detail = err.response?.data as { detail?: string } | undefined
+      return (
+        detail?.detail ??
+        (err.code === 'ERR_NETWORK'
+          ? 'Cannot reach backend — is it running on :8000?'
+          : 'Generation failed')
+      )
+    }
+    return 'Generation failed'
+  }
+
   const generate = async () => {
     if (!resume.contact.name.trim()) {
       toast.error('Please enter your name first')
@@ -25,7 +39,7 @@ export function useGenerate() {
 
     try {
       const res = await resumeApi.generate({
-        resume_data: resume as any,
+        resume_data: resume,
         template_id: templateId,
         color_scheme: colorScheme,
         job_description: jobDescription,
@@ -34,13 +48,8 @@ export function useGenerate() {
       setAts(res.ats)
       toast.success('Resume generated!', { id: tid })
       return true
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.detail ??
-        (err?.code === 'ERR_NETWORK'
-          ? 'Cannot reach backend — is it running on :8000?'
-          : 'Generation failed')
-      toast.error(msg, { id: tid })
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err), { id: tid })
       return false
     } finally {
       setGenerating(false)
@@ -77,7 +86,7 @@ export function useGenerate() {
 ${generatedHtml}
 <script>
   window.onload = () => { setTimeout(() => { window.print(); }, 400); };
-<\/script>
+</script>
 </body>
 </html>`)
     win.document.close()

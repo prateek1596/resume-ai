@@ -101,6 +101,9 @@ export const TEMPLATES: Template[] = [
   { id: 'sharp',      name: 'Sharp',        description: 'Angled · No photo · Bold',        hasPhoto: false, category: 'creative' },
   { id: 'timeline',   name: 'Timeline',     description: 'Dots · Photo · Chronological',    hasPhoto: true,  category: 'modern'   },
   { id: 'ats_pure',   name: 'ATS Pure',     description: 'Text-only · No photo · Max ATS',  hasPhoto: false, category: 'ats'      },
+  { id: 'bento',      name: 'Bento',        description: 'Card grid · Photo · Modern',      hasPhoto: true,  category: 'modern'   },
+  { id: 'monograph',  name: 'Monograph',    description: 'Editorial · No photo · Serif',    hasPhoto: false, category: 'classic'  },
+  { id: 'duo',        name: 'Duo',          description: 'Split rail · Photo · Compact',    hasPhoto: true,  category: 'modern'   },
 ]
 
 export const COLOR_SCHEMES = [

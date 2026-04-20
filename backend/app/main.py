@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.routes import auth, extract, resume
 from app.core.config import get_settings
-from app.api.routes import resume, extract, auth
 
 settings = get_settings()
 

@@ -1,6 +1,6 @@
 """Extract structured resume data from uploaded files."""
 from __future__ import annotations
-import base64
+
 import io
 import json
 import re
@@ -16,7 +16,16 @@ except ImportError:  # pragma: no cover - depends on local environment
     PdfReader = None
 
 from app.core.config import get_settings
-from app.models.resume import ResumeData, ContactInfo, ExperienceItem, EducationItem, Skills, CertificationItem, LanguageItem, ProjectItem
+from app.models.resume import (
+    CertificationItem,
+    ContactInfo,
+    EducationItem,
+    ExperienceItem,
+    LanguageItem,
+    ProjectItem,
+    ResumeData,
+    Skills,
+)
 
 settings = get_settings()
 client = anthropic.Anthropic(api_key=settings.anthropic_api_key) if anthropic else None
@@ -206,14 +215,12 @@ def _fallback_resume_from_text(text: str) -> ResumeData:
             pending_lower = pending.lower()
             should_join = False
             if pending:
-                if pending.endswith(("-", "–", ":")) and len(line.split()) <= 3:
-                    should_join = True
-                elif pending_lower.endswith("participation") and lower == "certificate":
-                    should_join = True
-                elif pending_lower.endswith("architect") and lower == "associate":
-                    should_join = True
-                elif lower == "certificate" and pending_lower.endswith(("camp", "training", "workshop")):
-                    should_join = True
+                should_join = (
+                    (pending.endswith(("-", "–", ":")) and len(line.split()) <= 3)
+                    or (pending_lower.endswith("participation") and lower == "certificate")
+                    or (pending_lower.endswith("architect") and lower == "associate")
+                    or (lower == "certificate" and pending_lower.endswith(("camp", "training", "workshop")))
+                )
             if should_join:
                 pending = f"{pending} {line.strip()}".strip()
                 continue
@@ -450,8 +457,8 @@ def _dict_to_resume_data(d: dict) -> ResumeData:
             for c in d.get("certifications", [])
         ],
         languages=[
-            LanguageItem(**{k: v for k, v in l.items() if k in LanguageItem.model_fields})
-            for l in d.get("languages", [])
+            LanguageItem(**{k: v for k, v in lang.items() if k in LanguageItem.model_fields})
+            for lang in d.get("languages", [])
         ],
         projects=[
             ProjectItem(**{k: v for k, v in p.items() if k in ProjectItem.model_fields})

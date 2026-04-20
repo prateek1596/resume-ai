@@ -1,6 +1,6 @@
 from __future__ import annotations
-from pydantic import BaseModel, EmailStr, HttpUrl, Field
-from typing import Optional
+
+from pydantic import BaseModel, Field
 
 
 class ContactInfo(BaseModel):
@@ -65,7 +65,7 @@ class ResumeData(BaseModel):
     certifications: list[CertificationItem] = Field(default_factory=list)
     languages: list[LanguageItem] = Field(default_factory=list)
     projects: list[ProjectItem] = Field(default_factory=list)
-    photo_base64: Optional[str] = None
+    photo_base64: str | None = None
 
 
 class ATSSuggestion(BaseModel):

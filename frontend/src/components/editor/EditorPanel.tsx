@@ -7,8 +7,21 @@ import './EditorPanel.css'
 
 export function EditorPanel() {
   const [tab, setTab] = useState('basics')
+  const { reset } = useResumeStore()
+
+  const handleReset = () => {
+    if (window.confirm('Reset the entire resume workspace? This clears all content, the generated preview, and ATS analysis.')) {
+      reset()
+      setTab('basics')
+    }
+  }
+
   return (
     <div className="fade-in">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 8 }}>
+        <div style={{ fontSize: 12, color: '#71717a' }}>Build, refine, and reuse sections without starting over.</div>
+        <button className="btn btn-ghost btn-sm" onClick={handleReset}>Reset Resume</button>
+      </div>
       <Tabs
         tabs={[
           { id: 'basics',     label: 'Basics'     },
@@ -121,7 +134,7 @@ function BasicsTab() {
 
 // ── Experience ─────────────────────────────────────────────────────────
 function ExperienceTab() {
-  const { resume, addExperience, updateExperience, removeExperience } = useResumeStore()
+  const { resume, addExperience, updateExperience, removeExperience, duplicateExperience } = useResumeStore()
   const { jobDescription } = useResumeStore()
   const [improving, setImproving] = useState<string | null>(null)
 
@@ -147,7 +160,10 @@ function ExperienceTab() {
         <div key={exp.id} className="card ep-item-card">
           <div className="ep-item-header">
             <span className="ep-item-label">Experience {idx + 1}</span>
-            <button className="btn btn-ghost btn-icon btn-sm ep-danger" onClick={() => removeExperience(exp.id)}>✕</button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn btn-ghost btn-icon btn-sm" onClick={() => duplicateExperience(exp.id)} title="Duplicate experience">⧉</button>
+              <button className="btn btn-ghost btn-icon btn-sm ep-danger" onClick={() => removeExperience(exp.id)}>✕</button>
+            </div>
           </div>
           <div className="ep-col-8">
             <Grid2>
@@ -184,7 +200,7 @@ function ExperienceTab() {
 
 // ── Education ──────────────────────────────────────────────────────────
 function EducationTab() {
-  const { resume, addEducation, updateEducation, removeEducation, addCertification, updateCertification, removeCertification } = useResumeStore()
+  const { resume, addEducation, updateEducation, removeEducation, duplicateEducation, addCertification, updateCertification, removeCertification, duplicateCertification } = useResumeStore()
 
   return (
     <div>
@@ -192,7 +208,10 @@ function EducationTab() {
         <div key={edu.id} className="card ep-item-card">
           <div className="ep-item-header">
             <span className="ep-item-label">Education {idx + 1}</span>
-            <button className="btn btn-ghost btn-icon btn-sm ep-danger" onClick={() => removeEducation(edu.id)}>✕</button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn btn-ghost btn-icon btn-sm" onClick={() => duplicateEducation(edu.id)} title="Duplicate education">⧉</button>
+              <button className="btn btn-ghost btn-icon btn-sm ep-danger" onClick={() => removeEducation(edu.id)}>✕</button>
+            </div>
           </div>
           <div className="ep-col-8">
             <Input label="School / University" value={edu.school} onChange={e => updateEducation(edu.id, 'school', e.target.value)} placeholder="MIT" />
@@ -215,7 +234,10 @@ function EducationTab() {
         <div key={cert.id} className="card ep-item-card">
           <div className="ep-item-header">
             <span className="ep-item-label">Cert {idx + 1}</span>
-            <button className="btn btn-ghost btn-icon btn-sm ep-danger" onClick={() => removeCertification(cert.id)}>✕</button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn btn-ghost btn-icon btn-sm" onClick={() => duplicateCertification(cert.id)} title="Duplicate certification">⧉</button>
+              <button className="btn btn-ghost btn-icon btn-sm ep-danger" onClick={() => removeCertification(cert.id)}>✕</button>
+            </div>
           </div>
           <div className="ep-col-8">
             <Input label="Certification Name" value={cert.name} onChange={e => updateCertification(cert.id, 'name', e.target.value)} placeholder="AWS Solutions Architect" />
@@ -233,7 +255,7 @@ function EducationTab() {
 
 // ── Skills ─────────────────────────────────────────────────────────────
 function SkillsTab() {
-  const { resume, addSkill, removeSkill, addLanguage, updateLanguage, removeLanguage, addProject, updateProject, removeProject } = useResumeStore()
+  const { resume, addSkill, removeSkill, addLanguage, updateLanguage, removeLanguage, duplicateLanguage, addProject, updateProject, removeProject, duplicateProject } = useResumeStore()
 
   return (
     <div className="ep-col-14">
@@ -253,7 +275,10 @@ function SkillsTab() {
           <div key={lang.id} className="ep-lang-row">
             <Input label={idx === 0 ? 'Language' : undefined} value={lang.language} onChange={e => updateLanguage(lang.id, 'language', e.target.value)} placeholder="English" />
             <Input label={idx === 0 ? 'Level' : undefined} value={lang.level} onChange={e => updateLanguage(lang.id, 'level', e.target.value)} placeholder="Native" />
-            <button className="btn btn-ghost btn-icon btn-sm ep-danger ep-lang-remove" onClick={() => removeLanguage(lang.id)}>✕</button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn btn-ghost btn-icon btn-sm" onClick={() => duplicateLanguage(lang.id)} title="Duplicate language">⧉</button>
+              <button className="btn btn-ghost btn-icon btn-sm ep-danger ep-lang-remove" onClick={() => removeLanguage(lang.id)}>✕</button>
+            </div>
           </div>
         ))}
         <button className="add-row" onClick={addLanguage}>+ Add Language</button>
@@ -265,7 +290,10 @@ function SkillsTab() {
           <div key={proj.id} className="ep-project-wrap">
             <div className="ep-project-header">
               <span className="ep-project-label">Project {idx + 1}</span>
-              <button className="btn btn-ghost btn-icon btn-sm ep-danger" onClick={() => removeProject(proj.id)}>✕</button>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button className="btn btn-ghost btn-icon btn-sm" onClick={() => duplicateProject(proj.id)} title="Duplicate project">⧉</button>
+                <button className="btn btn-ghost btn-icon btn-sm ep-danger" onClick={() => removeProject(proj.id)}>✕</button>
+              </div>
             </div>
             <div className="ep-col-6">
               <Input label="Project Name" value={proj.name} onChange={e => updateProject(proj.id, 'name', e.target.value)} placeholder="My Awesome Project" />

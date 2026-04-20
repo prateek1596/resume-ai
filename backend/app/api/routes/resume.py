@@ -1,6 +1,11 @@
+from __future__ import annotations
+
+import asyncio
+
 from fastapi import APIRouter, HTTPException
+
 from app.models.resume import GenerateRequest, GenerateResponse, ImproveRequest, ImproveResponse
-from app.services import generator, ats
+from app.services import ats, generator
 
 router = APIRouter(prefix="/resume", tags=["resume"])
 
@@ -9,7 +14,6 @@ router = APIRouter(prefix="/resume", tags=["resume"])
 async def generate_resume(req: GenerateRequest):
     """Generate resume HTML and run ATS analysis in parallel."""
     try:
-        import asyncio
         html_task = asyncio.create_task(
             generator.generate(req.resume_data, req.template_id, req.color_scheme, req.job_description)
         )
@@ -18,8 +22,8 @@ async def generate_resume(req: GenerateRequest):
         )
         html, ats_result = await asyncio.gather(html_task, ats_task)
         return GenerateResponse(html=html, ats=ats_result)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=str(err)) from err
 
 
 @router.post("/improve", response_model=ImproveResponse)
@@ -30,8 +34,8 @@ async def improve_content(req: ImproveRequest):
             req.content, req.context, req.job_description, req.mode
         )
         return ImproveResponse(improved=improved, changes_made=changes)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=str(err)) from err
 
 
 @router.post("/ats")
@@ -40,5 +44,5 @@ async def analyze_ats(req: GenerateRequest):
     try:
         result = await ats.analyze(req.resume_data, req.job_description)
         return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=str(err)) from err
