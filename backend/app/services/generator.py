@@ -46,6 +46,9 @@ TEMPLATE_DESCRIPTIONS = {
     "finance":    "Elegant finance-focused resume with precise metrics, restrained typography, and high-contrast section dividers.",
     "product":    "Outcome-led product resume with strategic summary placement, emphasis on impact metrics, and clean modular sections.",
     "portfolio":  "Portfolio-forward resume with stronger project showcase, visual hierarchy for links, and modern creative balance.",
+    "impact":     "Results-first layout with KPI callout blocks near top, high-contrast hierarchy, and concise achievement framing.",
+    "consulting": "Structured consulting-style document with clear problem-action-result bullets and restrained executive formatting.",
+    "founder":    "Founder narrative style balancing leadership outcomes, product impact, and venture-building highlights.",
 }
 
 

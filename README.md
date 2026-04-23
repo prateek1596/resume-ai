@@ -15,11 +15,16 @@ AI-powered resume builder. Upload your LinkedIn profile, pick a template, and ge
 ## Features
 
 - **Import** LinkedIn PDF/ZIP export, existing resume PDF/DOCX, or fill manually
-- **10 templates** — 5 with photo support, 5 without (including an ATS-pure text-only option)
+- **19 templates** — modern/classic/creative/minimal/ATS variants with optional photo layouts
 - **6 colour schemes** — Classic, Navy, Emerald, Crimson, Slate, Gold
 - **ATS analysis** — score 0-100, section-level breakdown, keyword matching, actionable suggestions
 - **AI bullet improver** — rewrite experience bullets with strong action verbs and quantification
 - **AI summary improver** — tailors your summary to a target job description
+- **Resume insights endpoint** — deterministic completeness, section coverage, and recommendation engine
+- **Template catalog endpoint** — backend-driven template/color metadata for frontend sync
+- **Job target manager UI** — save/switch role descriptions for tailored applications
+- **Profile workspace panel** — save/load/delete full resume workspaces
+- **Insights panel** — run structural quality checks without consuming AI tokens
 - **Live preview** — zoom in/out, instant refresh on template change
 - **PDF download** — browser print dialog, print-to-PDF
 
@@ -70,7 +75,7 @@ resumeai/
 │   │   │   ├── generator.py      ResumeData → resume HTML via Claude
 │   │   │   └── ats.py            ATS scoring and suggestions via Claude
 │   │   └── api/routes/
-│   │       ├── resume.py         POST /generate  /improve  /ats
+│   │       ├── resume.py         POST /generate /improve /ats /keywords /insights + GET /templates
 │   │       └── extract.py        POST /extract/upload
 │   ├── tests/test_api.py
 │   ├── pyproject.toml
@@ -129,6 +134,31 @@ AI-improve a piece of resume content.
 
 Modes: `bullets` | `summary` | `general`
 
+### `POST /api/v1/resume/keywords`
+
+Run keyword-focused NLP matching between resume text and target job description.
+
+Returns `{ score, matched_keywords, missing_keywords, highlight_terms, suggested_focus }`.
+
+### `POST /api/v1/resume/insights`
+
+Run deterministic structure/completeness checks (no LLM required).
+
+```json
+{
+  "resume_data": { ... },
+  "job_description": "optional JD text"
+}
+```
+
+Returns `{ overall_completeness, section_word_counts, strengths, gaps, recommendations }`.
+
+### `GET /api/v1/resume/templates`
+
+Returns backend template + color scheme catalog:
+
+`{ templates: [...], color_schemes: [...] }`
+
 ### `POST /api/v1/extract/upload`
 
 Upload a file and extract structured resume data. Accepts PDF, DOCX, TXT, or LinkedIn ZIP.
@@ -153,6 +183,25 @@ Returns `{ status: "ok", version }`.
 | `sharp`     | Sharp        | ✗     | Angled header    |
 | `timeline`  | Timeline     | ✓     | Dot timeline     |
 | `ats_pure`  | ATS Pure     | ✗     | Text only        |
+| `bento`     | Bento        | ✓     | Card grid        |
+| `monograph` | Monograph    | ✗     | Editorial serif  |
+| `duo`       | Duo          | ✓     | Split rail       |
+| `finance`   | Finance      | ✗     | Metric-forward   |
+| `product`   | Product      | ✓     | Outcome-led      |
+| `portfolio` | Portfolio    | ✓     | Project-first    |
+| `impact`    | Impact       | ✗     | KPI-first        |
+| `consulting`| Consulting   | ✗     | Structured case  |
+| `founder`   | Founder      | ✓     | Leadership story |
+
+## Frontend Sections
+
+- Import Profile
+- Edit Content
+- Job Targets
+- Templates
+- ATS Score
+- Insights
+- Profiles
 
 ## Development
 

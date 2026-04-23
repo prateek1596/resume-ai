@@ -123,3 +123,38 @@ def test_keyword_analysis_endpoint():
     data = res.json()
     assert "highlight_terms" in data
     assert "Python" in data["matched_keywords"] or "python" in [kw.lower() for kw in data["matched_keywords"]]
+
+
+def test_templates_catalog_endpoint():
+    headers = auth_headers()
+    res = client.get("/api/v1/resume/templates", headers=headers)
+    assert res.status_code == 200
+
+    data = res.json()
+    assert "templates" in data
+    assert "color_schemes" in data
+    template_ids = {template["id"] for template in data["templates"]}
+    assert "impact" in template_ids
+    assert "consulting" in template_ids
+    assert "founder" in template_ids
+
+
+def test_resume_insights_endpoint():
+    headers = auth_headers()
+    res = client.post(
+        "/api/v1/resume/insights",
+        json={
+            "resume_data": SAMPLE_RESUME["resume_data"],
+            "job_description": "Senior React and Python engineer with ownership and measurable delivery",
+        },
+        headers=headers,
+    )
+    assert res.status_code == 200
+
+    data = res.json()
+    assert "overall_completeness" in data
+    assert "section_word_counts" in data
+    assert "strengths" in data
+    assert "gaps" in data
+    assert "recommendations" in data
+    assert data["overall_completeness"] >= 50
