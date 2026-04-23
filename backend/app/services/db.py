@@ -91,3 +91,23 @@ def init_db() -> None:
             """
         )
         conn.execute("CREATE INDEX IF NOT EXISTS idx_profile_versions_profile ON profile_versions(profile_id, version_number DESC)")
+
+
+def reset_db(remove_file: bool = False) -> None:
+    """Reset database contents for local maintenance and test isolation."""
+    db_path = _db_path()
+    if remove_file:
+        if db_path.exists():
+            db_path.unlink()
+        return
+
+    with get_connection() as conn:
+        conn.execute("DROP TABLE IF EXISTS profile_versions")
+        conn.execute("DROP TABLE IF EXISTS profiles")
+        conn.execute("DROP TABLE IF EXISTS sessions")
+        conn.execute("DROP TABLE IF EXISTS users")
+
+
+def migrate_db() -> None:
+    """Run schema migration/creation utility."""
+    init_db()
