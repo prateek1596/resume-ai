@@ -1,5 +1,11 @@
 import axios from 'axios'
-import type { ATSAnalysis, NLPAnalysis, ResumeData } from '../types/resume'
+import type {
+  ATSAnalysis,
+  NLPAnalysis,
+  ResumeData,
+  ResumeInsightsResponse,
+  TemplateCatalogResponse,
+} from '../types/resume'
 import { useAuthStore } from '../stores/authStore'
 
 const api = axios.create({
@@ -161,6 +167,19 @@ export const resumeApi = {
     job_description: string
   }): Promise<KeywordAnalysisResponse> => {
     const { data } = await api.post<KeywordAnalysisResponse>('/resume/keywords', params)
+    return data
+  },
+
+  getTemplateCatalog: async (): Promise<TemplateCatalogResponse> => {
+    const { data } = await api.get<TemplateCatalogResponse>('/resume/templates')
+    return data
+  },
+
+  getResumeInsights: async (params: {
+    resume_data: ResumeData
+    job_description: string
+  }): Promise<ResumeInsightsResponse> => {
+    const { data } = await api.post<ResumeInsightsResponse>('/resume/insights', params)
     return data
   },
 

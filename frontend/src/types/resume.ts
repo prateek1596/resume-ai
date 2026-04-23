@@ -92,6 +92,33 @@ export interface NLPAnalysis {
   suggested_focus: string[]
 }
 
+export interface TemplateCatalogItem {
+  id: string
+  name: string
+  description: string
+  has_photo: boolean
+  category: 'modern' | 'classic' | 'creative' | 'minimal' | 'ats'
+}
+
+export interface ColorSchemeCatalogItem {
+  id: string
+  label: string
+  swatch: string
+}
+
+export interface TemplateCatalogResponse {
+  templates: TemplateCatalogItem[]
+  color_schemes: ColorSchemeCatalogItem[]
+}
+
+export interface ResumeInsightsResponse {
+  overall_completeness: number
+  section_word_counts: Record<string, number>
+  strengths: string[]
+  gaps: string[]
+  recommendations: string[]
+}
+
 export interface Template {
   id: string
   name: string
@@ -117,6 +144,9 @@ export const TEMPLATES: Template[] = [
   { id: 'finance',    name: 'Finance',      description: 'Sharp metrics · No photo · Premium', hasPhoto: false, category: 'classic'  },
   { id: 'product',    name: 'Product',      description: 'Outcome-led · Photo · Strategy',  hasPhoto: true,  category: 'modern'   },
   { id: 'portfolio',  name: 'Portfolio',    description: 'Creative · Photo · Project-first', hasPhoto: true,  category: 'creative' },
+  { id: 'impact',     name: 'Impact',       description: 'Bold KPIs · No photo · Results-first', hasPhoto: false, category: 'modern' },
+  { id: 'consulting', name: 'Consulting',   description: 'Structured cases · No photo · Executive', hasPhoto: false, category: 'classic' },
+  { id: 'founder',    name: 'Founder',      description: 'Narrative-led · Photo · Leadership', hasPhoto: true, category: 'creative' },
 ]
 
 export const COLOR_SCHEMES = [
