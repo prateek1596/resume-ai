@@ -24,7 +24,7 @@ describe('JobTargetsPanel', () => {
 
     render(<JobTargetsPanel />)
 
-    await user.type(screen.getByLabelText('Target Name'), 'Frontend Role')
+    await user.type(screen.getByPlaceholderText('Senior Frontend Engineer'), 'Frontend Role')
     await user.click(screen.getByRole('button', { name: 'Save Target' }))
 
     const state = useResumeStore.getState()

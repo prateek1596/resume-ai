@@ -212,6 +212,20 @@ make build     # vite build
 make clean     # remove caches/artifacts
 ```
 
+Frontend component tests:
+
+```bash
+cd frontend
+npm test
+```
+
+Database reset utility:
+
+```bash
+cd backend
+python scripts/db_reset.py --recreate
+```
+
 ## Env Variables
 
 ### Backend (`backend/.env`)
