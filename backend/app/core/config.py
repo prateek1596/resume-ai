@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     # Persistence
     db_path: str = "data/resumeai.db"
 
+    # Auth/session
+    access_token_minutes: int = 30
+    refresh_token_days: int = 14
+
     # CORS
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 

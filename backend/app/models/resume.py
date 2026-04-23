@@ -105,6 +105,38 @@ class GenerateResponse(BaseModel):
     ats: ATSAnalysis
 
 
+class TemplateMeta(BaseModel):
+    id: str
+    name: str
+    description: str
+    has_photo: bool
+    category: str
+
+
+class ColorSchemeMeta(BaseModel):
+    id: str
+    label: str
+    swatch: str
+
+
+class TemplateCatalogResponse(BaseModel):
+    templates: list[TemplateMeta]
+    color_schemes: list[ColorSchemeMeta]
+
+
+class ResumeInsightsRequest(BaseModel):
+    resume_data: ResumeData
+    job_description: str = ""
+
+
+class ResumeInsightsResponse(BaseModel):
+    overall_completeness: int
+    section_word_counts: dict[str, int]
+    strengths: list[str] = Field(default_factory=list)
+    gaps: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
+
+
 class ExtractResponse(BaseModel):
     resume_data: ResumeData
     source: str  # "linkedin" | "pdf" | "docx"
