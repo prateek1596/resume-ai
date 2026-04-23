@@ -5,25 +5,34 @@ import { UploadPanel } from './components/editor/UploadPanel'
 import { EditorPanel } from './components/editor/EditorPanel'
 import { TemplatesPanel } from './components/templates/TemplatesPanel'
 import { ATSPanel } from './components/resume/ATSPanel'
+import { InsightsPanel } from './components/resume/InsightsPanel'
 import { ResumePreview } from './components/resume/ResumePreview'
+import { JobTargetsPanel } from './components/editor/JobTargetsPanel'
+import { ProfilesPanel } from './components/editor/ProfilesPanel'
 import { Badge } from './components/ui'
 import { AuthPanel } from './components/auth/AuthPanel'
 import { useAuthStore } from './stores/authStore'
 
-type Section = 'upload' | 'edit' | 'templates' | 'ats'
+type Section = 'upload' | 'edit' | 'targets' | 'templates' | 'ats' | 'insights' | 'profiles'
 
 const SECTION_LABELS: Record<Section, string> = {
   upload: 'Import Profile',
   edit: 'Edit Content',
+  targets: 'Job Targets',
   templates: 'Templates',
   ats: 'ATS Analysis',
+  insights: 'Resume Insights',
+  profiles: 'Saved Profiles',
 }
 
 const NAV: { id: Section; icon: string; label: string }[] = [
   { id: 'upload',    icon: '⬆', label: 'Import Profile' },
   { id: 'edit',      icon: '✎', label: 'Edit Content'   },
+  { id: 'targets',   icon: '⌁', label: 'Job Targets'    },
   { id: 'templates', icon: '◫', label: 'Templates'      },
   { id: 'ats',       icon: '◎', label: 'ATS Score'      },
+  { id: 'insights',  icon: '◍', label: 'Insights'       },
+  { id: 'profiles',  icon: '☰', label: 'Profiles'       },
 ]
 
 function atsVariant(score: number): 'green' | 'yellow' | 'red' {
@@ -155,8 +164,11 @@ export default function App() {
         <div style={{ flex: 1, overflowY: 'auto', padding: 14 }}>
           {section === 'upload'    && <UploadPanel    onImported={() => setSection('edit')} />}
           {section === 'edit'      && <EditorPanel />}
+          {section === 'targets'   && <JobTargetsPanel />}
           {section === 'templates' && <TemplatesPanel />}
           {section === 'ats'       && <ATSPanel />}
+          {section === 'insights'  && <InsightsPanel />}
+          {section === 'profiles'  && <ProfilesPanel />}
         </div>
       </div>
 
