@@ -20,6 +20,18 @@ def auth_headers():
     return {"Authorization": f"Bearer {token}"}
 
 
+def auth_headers_for(email: str, password: str = "secret123"):
+    credentials = {"email": email, "password": password}
+    register = client.post("/api/v1/auth/register", json=credentials)
+    if register.status_code not in (200, 409):
+        raise AssertionError(register.text)
+
+    login = client.post("/api/v1/auth/login", json=credentials)
+    assert login.status_code == 200
+    token = login.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 def test_health():
     res = client.get("/health")
     assert res.status_code == 200
@@ -158,3 +170,67 @@ def test_resume_insights_endpoint():
     assert "gaps" in data
     assert "recommendations" in data
     assert data["overall_completeness"] >= 50
+
+
+def test_profiles_requires_authentication():
+    list_res = client.get("/api/v1/profiles")
+    assert list_res.status_code == 401
+
+    create_res = client.post(
+        "/api/v1/profiles",
+        json={
+            "name": "Unauthorized",
+            "resume_data": SAMPLE_RESUME["resume_data"],
+            "template_id": "minimal",
+            "color_scheme": "classic",
+            "job_description": "",
+        },
+    )
+    assert create_res.status_code == 401
+
+
+def test_profiles_rejects_invalid_token():
+    headers = {"Authorization": "Bearer invalid-token-value"}
+    res = client.get("/api/v1/profiles", headers=headers)
+    assert res.status_code == 401
+
+
+def test_profile_cross_user_get_update_delete_blocked():
+    owner_headers = auth_headers_for("owner@test.com")
+    intruder_headers = auth_headers_for("intruder@test.com")
+
+    create_res = client.post(
+        "/api/v1/profiles",
+        json={
+            "name": "Owner Profile",
+            "resume_data": SAMPLE_RESUME["resume_data"],
+            "template_id": "minimal",
+            "color_scheme": "classic",
+            "job_description": "backend engineer",
+        },
+        headers=owner_headers,
+    )
+    assert create_res.status_code == 200
+    profile_id = create_res.json()["id"]
+
+    get_res = client.get(f"/api/v1/profiles/{profile_id}", headers=intruder_headers)
+    assert get_res.status_code == 404
+
+    update_res = client.put(
+        f"/api/v1/profiles/{profile_id}",
+        json={
+            "name": "Intruder Edit",
+            "resume_data": SAMPLE_RESUME["resume_data"],
+            "template_id": "tech",
+            "color_scheme": "navy",
+            "job_description": "forbidden",
+        },
+        headers=intruder_headers,
+    )
+    assert update_res.status_code == 404
+
+    delete_res = client.delete(f"/api/v1/profiles/{profile_id}", headers=intruder_headers)
+    assert delete_res.status_code == 404
+
+    owner_check = client.get(f"/api/v1/profiles/{profile_id}", headers=owner_headers)
+    assert owner_check.status_code == 200
