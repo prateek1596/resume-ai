@@ -243,3 +243,5 @@ python scripts/db_reset.py --recreate
 | Variable        | Default                          | Description       |
 |-----------------|----------------------------------|-------------------|
 | `VITE_API_URL`  | `http://localhost:8000/api/v1`   | Backend API URL   |
+"" 
+"## Update 1" 
